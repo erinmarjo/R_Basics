@@ -1,0 +1,44 @@
+---
+title: "Class Lesson Prep"
+author: "Erin Johnston"
+date: "10/8/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+```
+
+
+```{r}
+
+library(tidyverse)
+library(here)
+
+raw_dat <- read_csv(here("Data", "BIO503_2023.csv"))
+str(raw_dat)
+
+class_dat <- raw_dat %>%
+  mutate(trip = as.factor(trip),
+         drift = as.factor(drift),
+         area = as.factor(area),
+         site = as.factor(site),
+         species_code = as.factor(species_code),
+         species_name = as.factor(species_name),
+         gear = as.factor(gear),
+         year = as.factor(year)) %>%
+  filter(species_code %in% c("BLU", "GPR", "VER", "YTL", "OLV", "KLP", "CPR"),
+         year %in% c(2012:2022)) %>%
+  drop_na()
+
+write_csv(class_dat, path = (here("Data", "CCFRP_CP_2012_2022.csv")))
+
+str(class_dat)
+
+table(class_dat$year)
+
+
+```
+

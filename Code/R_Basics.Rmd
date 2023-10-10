@@ -1,0 +1,731 @@
+---
+title: "R Basics"
+author: "Fall 2023 - BIO 503"
+date: "10/10/2023"
+output: 
+  prettydoc::html_pretty:
+  #html_document:
+    toc: true
+    #number_sections: true
+    toc_depth: 4
+    theme: cayman
+    #toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+```
+
+
+# Lesson 1 - R, RStudio, Working Directories, Data
+
+R is a programming language that is a very valuable tool for biologist and ecologists. It is a powerful statistical program that also allows the user to create publication-quality figures. 
+
+
+## 1.1. Installing R and RStudio
+
+First, everyone should have R and RStudio installed on their computers. Here are some links to do that: https://cran.r-project.org/ (obviously... download R for windows if you have a PC or R for macOS if you are a plebian.) https://posit.co/download/rstudio-desktop/ Download R studio for whatever kind of laptop or computer you have.
+
+## 1.2. The RStudio interface
+
+The RStudio IDE has four main windows. The Console or command line, the Source Editor, the Environment, and the Files/Plots window (which also shows your packages and the unhelpful menu).
+
+* **Console**: The console or command line is where you can type code and execute it immediately. This is helpful for checking things out that you don't want saved in your code file. You can use this as a calculator, you can use this to check out parts of your data, you can use this to install packages (*NEVER* install packages in your 'script' if you plan to send your script to collaborators because not everyone will want to permanently change their packages to accomodate your). You run the code you type here simply by pressing `enter`.
+
+* **Source Editor**: This is where you will be working most often. This is where you will write code that you want to save. Code is not *evaluated* in the editor. You are editing and saving your code here. To run code in the editor you need to press `Ctrl + enter`, or if you are a plebian (aka Mac user) `command + enter`.
+
+* **Environment**: The environment window is extremely useful in showing you the type of objects you have in your workspace. If you assign a value or dataframe to an object, it will appear here. For example if you want to assign the value `7` to the object called `my_value`, it will appear there. Run this code:
+
+```{r}
+
+my_value <- 7
+
+```
+
+You can see that you *assigned* the value `7` to the object that you named `my_value`. This will also show all of your dataframes. For example, now make a dataframe with one column that has the number 1 through 20.
+
+```{r}
+
+my_df <- data.frame(numbers = c(1:20))
+
+```
+
+Several things just happened. You assigned a column called `numbers` the concatenated ("c") values of 1-20 to a dataframe called `my_df`.
+
+```{r}
+
+head(my_df, 10) ## check out the first 10 lines of this dataframe
+
+```
+
+
+* **Files/Plots**: This window has several functions. You can select the `files` tab, which shows all teh files in your current working directory (we will get to this). You can select the `plot` tab, which will show any visualization output. You can select the `packages` tab, which will show a list of all packages on your local disc as well as which ones you have selected. You can select the `help` tab, also known as the unhelpful menu. You can also select the `viewer` tab - who knows what that does -I have never used it.
+
+## 1.3. The difference between your script and your command line
+
+There are differences between your script (source editor) and your command line (console). You can write and run code in BOTH the script and the command line. However, things that you write in the script are code that you want to save and become part of your project. Code that you write in the command line will not be saved. But you can run this instantaneously, which makes it extremely useful for testing out code that you don't necessarily want to make it into your end product or give to end users.
+
+
+## 1.4. Installing packages and working with libraries
+
+Using a package has two steps, first intalling the package, second calling the library.
+
+To install a package, you can click the `packages` tab in the Files/Plots window > click `Install` and then put the name of the package.
+
+To install a package using code, simply use the `install.packages()` function in your CONSOLE **not** in your script. Let's install a couple of packages: `tidyverse` and `here`
+
+```{r, eval = F}
+
+## run this code in your console and remember, the names of the packages should have quotation marks around it.
+
+install.packages("tidyverse")
+
+install.packages ("here")
+
+```
+
+
+## QUICK SIDE LESSON - TIDYVERSE
+
+### What is tidyverse?
+
+It's nothing crazy. All it is is a group of packages that are designed for easy work flow, super sick and sleek data visualization, and easy to reproduce work (for both stats and data visualization). The packages that install when you install `tidyverse` are `dplyr`, `forcats`, `ggplot2`, `haven`, `lubridate`, `magrittr`, `purrr`, `readr`, `readxl`, `stringr`, `tibble` and `tidyr.` You could install and load all of these libraries separately to do several of the cool things we will look at, but why would you when you could get it all by installing one package: `tidyverse`. That's all -it is nothing scary.
+
+
+ Okay, back to it
+
+Once your packages are installed, you need to call them using the `library()` function. Lets call those two libraries:
+
+```{r}
+
+## run this code in your script, the names of the packages now do not need to have quotations
+
+library(tidyverse)
+library(here)
+
+```
+
+Once you call these packages, all of the functions within each package will be ready to use.
+
+
+## 1.5. Setting your working directory (WD)
+
+You need to set your working directory in order to tell RStudio where your data files and other associated filed are located. There are three main ways to do this
+
+### 1.5.1. Setwd() in your command line
+
+You can use the code `setwd()` in your command line to tell R where to look for your data. Do NOT do this in your script/source editor because if you send your code to collaborators, they will not have the same file pathway that you have on your computer. Instead run this in your command line.
+
+```{r, eval = F}
+
+setwd("C:/Users/erinj/Documents/GitHub/R_Basics/Code")
+
+```
+
+
+### 1.5.2. Manually
+
+You can also set your working directory manually by going to the `session` tab at the top of RStudio and selection `Set working directory > choose directory` and manually selecting the folder that contains your data files.
+
+### 1.5.3. R projects (most advanced)
+
+The most advanced way of setting your working directory is using R Projects. For the beginner R user, this maybe a little difficult to understand. R projects are useful because they are a 'bundle' of all of your data files, code, output, and associated files.
+
+
+## 1.6. Reading in your data
+
+### 1.6.1. Without R projects
+
+After setting your working directory using `setwd()` or using the manual method and write code like this:
+
+```{r, eval = F}
+
+## base R 
+
+my_baseR_dat <- read.csv("youdatafile.csv")
+
+## or tidyverse
+
+my_tidyR_dat <- read_csv("youdatafile.csv")
+
+```
+
+
+### 1.6.2. With R Projects
+
+If you have an R project will all the assocaited files, you can use the package `here()` to tell RStudio to look within certain folders in the project.  For example, I can read in code by telling it to look in a folder that I called `Data`.
+
+```{r, eval = F}
+
+mydat <- read_csv(here("Data", "youdatafile.csv"))
+
+```
+
+
+# Lesson 2 - Transforming your data
+
+Here is a small introduction to the dataset you will be working with: The California Collaborative Fisheries Research Program (CCFRP) is a marine protected area (MPA) monitoring program that fishes inside and outside of MPAs (areas closed to regular fishing pressure). Here is some information about these data:
+
+These are `tidy data` which means that each ROW belongs to a unique observation (aka each row is a different fish). Each column is a unique variable: 
+
+
+1. **Trip:** is the trip ID number that corresponds to the fish caught during that trip. This can be repeated because there can be several fish caught in the same trip.
+2. **Drift:** Each trip has 12 fishing drifts in it. This is nested inside of trip and can be repeated because there can be several fish caught in the same drift.
+3. **Area:** This is a categorical variable with two possibilities for areas that we went fishing: **BL** = Piedras Blancas, **PB** = Point Buchon.
+4. **Site:** This is a categorical variable with two possibilities for protection status of the area in which we were fishing: **MPA** = Marine Protected Area, **REF** = adjacent reference (non-proetected site)
+5. **Species code:** These codes correspond to species of groundfishes.
+6. **Species name:** These are the common names of the species of groundfishes.
+7. **Length:** This is the measured length of a fish in centimeters
+8. **Gear:** This is one of three gear types used to catch fishes (**BAR** = lingcod bar, **FLY** = Unbaited shrimpfly, **BAT** = Baited shrimpfly)
+9. **Year:** year...
+10. **Angler hours:** This is the TOTAL number of hours spent fishing during every drift. Each drift lasts for 15 minutes. Lets say that we had 10 fishermen fishing for the whole drift (all 15 minutes) then the total number of angler hours for that drift would be 2.5 hours. 10 anglers x 15 minutes = 150 minutes total = 2.5 hours total.
+
+The first step is to read in the data.
+
+```{r}
+
+raw_dat <- read_csv(here("Data", "CCFRP_CP_2012_2022.csv"))
+
+raw_dat %>%
+  head () ## take a look at the data
+
+```
+
+
+## 2.1. filter()
+
+Let's say that I just wanted to look at one species, Blue Rockfish (*Sebastes mystinus*), or one year, 2012, or just Blue Rockfish from 2012. We can use the `filter()` function to easily get at the data we want
+```{r}
+justbluerockfish <- raw_dat %>%
+  filter(species_code == "BLU")
+
+justbluerockfish %>%
+  head(10)
+```
+
+Notice now, none of the columns have changed, but now there are only 28,071 fish, all Blue Rockfish or "BLU". The `%>%` is called a pipe. You are piping the old data set `raw_dat` into this new function called `filter.` You use the double equal sign for a logical comparison or testing equality. So with that code I am saying when species code is exactly equal to "BLU" then return only matches in the new dataframe.
+
+```{r}
+
+just2012 <- raw_dat %>%
+  filter(year == 2012)
+
+just2012 %>%
+  head()
+
+```
+
+Now I have the 1,943 fish that were caught in 2012 (of mixed species now, not just blues).
+
+
+You can also use mathematical expressions to filter data if it is numeric. For instance, if you want all the years after 2014:
+
+```{r}
+CCFRP15_19 <- raw_dat %>%
+  filter(year > 2014)
+
+CCFRP15_19 %>%
+  head()
+
+```
+
+
+##### filtering for multiple variables at once
+
+Now if I wanted to get blues from 2012, I could do this all in one step from my original data:
+
+```{r}
+
+blue2012 <- raw_dat %>%
+  filter(species_code == "BLU", year == 2012) ## 239 Blue Rockfish caught in 2012
+
+blue2012 %>%
+  head()
+
+```
+
+##### filtering for multiple levels in the same variable
+
+Can you filter for several levels at once? YES
+
+```{r}
+
+blue_and_gopher <- raw_dat %>%
+  filter(species_code %in% c("BLU", "GPR"))
+
+blue_and_gopher %>%
+  head()
+
+```
+
+
+## 2.2. arrange()
+
+You can order your data frame by a variable. For this data, I think arranging by size could be informative. Let's arrange blue rockfish from 2012 by size. This function arranges in ASCENDING order -so my small fish will be first. If you want descending order you can say `arrange(desc(variable))`
+
+```{r}
+
+blue2012_b <- raw_dat %>%
+  filter(species_code == "BLU", year == 2012) %>%
+  arrange(length)
+
+blue2012_b %>%
+  head()
+
+```
+
+What are the 10 largest blue rockfish from 2012?
+
+```{r}
+
+blue2012_c <- raw_dat %>%
+  filter(species_code == "BLU", year == 2012) %>%
+  arrange(desc(length))
+
+blue2012_c %>%
+       head(10)
+
+```
+
+## 2.3. select()
+
+The `select()` function is an easy way to make a new dataframe with just the columns (variables) that you want. Let's say I want my new dataframe to have only length, species name, and year:
+
+```{r}
+sp_len_yr <- raw_dat %>%
+  select(species_name, length, year)
+
+sp_len_yr %>%
+  head()
+```
+
+This is also a great time to get your columns in the order you would like if this helps you to connect with your data
+
+## 2.4. group_by() and summarise()
+
+You can get summaries of `mean`, `sum`, `median`, `min`, `max` for a column of your data:
+
+```{r}
+fish_len <- raw_dat%>%
+  summarise(meanlength = mean(length),
+            medianlength = median(length),
+            sum(angler_hours))
+fish_len
+
+```
+
+Well doing it that way is not very informative because it summarized all 48,000+ lines of my raw dataset... instead, maybe we just want mean length from one year.
+
+```{r}
+
+fish_len_2012 <- raw_dat%>%
+  filter(year == 2012)%>%
+  summarize(meanlength = mean(length))
+
+fish_len_2012
+
+```
+
+Wonder if I want to see all years? Doing this 13 times would be annoying. Therefore, some smart person made `group_by`. Grouping tells the `summarize()` function that it should summarize by all categories in that group (in this instance year).
+
+```{r}
+
+fish_len_allyear <- raw_dat%>%
+  group_by(year)%>%
+  summarize(meanlength = mean(length))
+
+fish_len_allyear
+
+```
+
+Now, combine it with the filter function to figure out the mean length of Blue Rockfish from each year of the dataset:
+
+```{r}
+
+blue_len_allyear <- raw_dat%>%
+  filter(species_code == "BLU")%>%
+  group_by(year)%>%
+  summarize(meanlength = mean(length))
+
+blue_len_allyear
+
+```
+
+You can also use `group_by()` to group by more than one variable. For instance, lets say I want to figure out the mean length for Blue Rockfish for each year of the dataset in each of the two study sites (marine protected area or outside of the protected area). I would write code like this:
+
+```{r}
+
+blue_len_allyear_mpa <- raw_dat%>%
+  filter(species_code == "BLU")%>%
+  group_by(year, site)%>%
+  summarize(meanlength = mean(length))
+
+blue_len_allyear_mpa
+
+```
+
+
+## 2.5. count(), rename(), and mutate()
+
+`count()` and `rename()` do exactly what their names imply. `count()` counts and `rename()` renames. 
+
+More specifically, if the variables selected in the `count()` function, R will count how many unique observations are made within the smallest group.
+
+`mutate()` will add a new column with a specified name based on calculations using other columns. You can also use `mutate()` to add new columns with a value you assign and to reclassify variables.
+
+```{r}
+
+CP_cpue <- raw_dat %>%
+  count(trip, drift, area, site, species_code, year, angler_hours) %>% ##counted number of fish per species    
+  rename(numbercaught = n)%>%  ## renamed that new column to "numbercaught"
+  mutate(cpue = numbercaught/angler_hours, ##calculated catch per unit effort
+         institutuion = "Cal Poly") ## add a column called 'institution' where every value is 'Cal Poly'
+
+CP_cpue %>%
+  head()
+
+```
+
+Reclassify variables. This is important! You can use the `str()` function to figure out the structure of your dataframe and how R views each of your variables (e.g., as characters, doubles, numbers, factors, etc.). In our dataframe, R views species_code as a character string, but I want it to view speices_code as a factor with a few different levels:
+
+```{r}
+
+str(CP_cpue)
+
+CP_cpue_fctr <- CP_cpue %>%
+  mutate(species_code = as.factor(species_code))
+
+str(CP_cpue_fctr)
+
+```
+
+
+## 2.6. mutate() with case_when() a.k.a. the 'if then' statement
+
+If then statements are extremely useful in any coding language, but they are a bit more challenging to understand than we have time for today. Instead, you can use a nifty function called `case_when()` and house it within a `mutate()` function. The statement goes something like this in English: "in the case when a value within a certain column is this, then do this other thing with it".
+
+There was a marine heatwave in 2014 and an El Nino in 2015 & 2016. I want to make a new column that classifies these fish caught as 'before', 'during', and 'after' this marine heatwave event. So I want the years 2012-2013 to say before, the years 2014-2016 to say during, and the years after 2016 to say after.
+
+
+```{r}
+
+CP_cpue_MHW <- CP_cpue %>%
+  mutate(phase = case_when( ## my new column will be called 'phase'
+    year %in% c(2012,2013) ~ "Before",
+    year %in% c(2014:2016) ~ "During",
+    year %in% c(2016:2022) ~ "After"
+  ))
+
+```
+
+
+# Lesson 3 - Visualization
+
+
+You can use R, and specifically the `ggplot2` package within `tidyverse` to make some beautiful visualizations. You could look at densities of fish size throughout years...
+
+```{r, eval = T, echo = F}
+
+library(ggridges)
+
+dens_dat <- raw_dat %>%
+  filter(species_code == "BLU", area == "PB", site == "MPA") %>%
+  mutate(year = as.factor(year))
+
+dens <- ggplot()+
+  geom_density_ridges(data = dens_dat, aes(x = length, y = year, fill = year), 
+                      show.legend = F)+
+  scale_fill_manual(values = c( "#000000" ,"#003399", "#0000FF", "#3366CC","#006699", "#336666",
+                               "#339999","#33CCCC", "#33FFFF", "#00FFCC", 
+                               "#00FF66", "#00FF33", "#009933", "#006633"))+
+  labs(title = "Blue Rockfish Size Density") +
+  #facet_grid(site ~ area) +
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+dens
+
+```
+
+
+Make interactive maps using leaflet...
+
+```{r buchon map set up, echo = F, message = F, warnig = F}
+
+pb_cells <- read_csv(here("Data", "PB_cellcoords.csv")) %>%
+  dplyr::select(longitude, latitude, name, comment)
+
+pb_cell_names <- unique(pb_cells$name)
+
+pb_mpa_cells <- pb_cell_names[1:11]
+pb_ref_cells <- pb_cell_names[12:22]
+
+pb_corner1_mpa <- pb_cells %>%
+  filter(comment == 1, name %in% pb_mpa_cells)
+
+pb_corner2_mpa <- pb_cells %>%
+  filter(comment == 4, name %in% pb_mpa_cells)
+
+pb_corner1_ref <- pb_cells %>%
+  filter(comment == 1, name %in% pb_ref_cells)
+
+pb_corner2_ref <- pb_cells %>%
+  filter(comment == 4, name %in% pb_ref_cells)
+
+```
+
+
+```{r buchon map, fig.width= 9, fig.align= "center", echo = F}
+
+library(leaflet)
+
+leaflet()%>%
+  setView(lng = -120.8966, lat = 35.2473, zoom = 12)%>%
+  addTiles() %>%
+  addRectangles(lng1 = pb_corner1_mpa$longitude , lat1 = pb_corner1_mpa$latitude, 
+                lng2 = pb_corner2_mpa$longitude  , lat2 = pb_corner2_mpa$latitude,
+                fillColor = "transparent", label = pb_corner2_mpa$name, 
+                color = "#990000")%>%
+  addRectangles(lng1 = pb_corner1_ref$longitude , lat1 = pb_corner1_ref$latitude, 
+                lng2 = pb_corner2_ref$longitude  , lat2 = pb_corner2_ref$latitude,
+                fillColor = "transparent", label = pb_corner2_ref$name)%>%
+  addMiniMap(position = "bottomleft", width = 200, height = 200) %>%
+  addProviderTiles("Esri.WorldImagery")
+
+```
+
+
+you could even embarass your advisor using cowplot....
+
+```{r, eval = T, echo = F}
+
+library(magick)
+library(cowplot)
+library(gridExtra)
+library(patchwork)
+data1 <- read_csv(here("Data","fun2.csv"))
+data2 <- read_csv(here("Data", "fun.csv"))
+funplot2 <- ggplot(data1, aes(x = Status, color = Status, fill = Status))+
+  geom_bar(width = 0.3)+
+  ylab("Number of rad MS students")+
+  ggtitle ( "2022: 3 Students Graduated")+
+  scale_fill_manual(values=c( "#00BE6C", "#56B4E9"))+
+  scale_color_manual(values=c( "#00BE6C", "#56B4E9"))+
+  scale_y_continuous(limits = c(0,6))+
+  theme_cowplot()
+plot1<- ggdraw()+
+  draw_image(here("Images", "sadben.png"))+ ##image filepath
+  draw_plot(funplot2)
+
+funplot <- ggplot(data2, aes(x = Status, color = Status, fill = Status))+
+  geom_bar(width = 0.3)+
+  ylab("")+
+  lims(y= c(0,4))+
+  ggtitle ( "2023: LEVEL UP!")+
+  scale_fill_manual(values=c( "#00BE6C", "#56B4E9"))+
+  scale_color_manual(values=c( "#00BE6C", "#56B4E9"))+
+  scale_y_continuous(limits = c(0,6))+
+  theme_cowplot()
+plot2<-ggdraw()+
+  draw_image(here("Images", "benben.png"))+
+  draw_plot(funplot)
+
+#grid.arrange(plot1, plot2, nrow = 1, ncol = 2)
+
+plot1 + plot2
+
+```
+
+## 3.1. Basic ggplot syntax
+
+The basic syntax here is `ggplot(dataframe, aes(x, y)) + geom_()`
+
+```{r}
+
+head(iris)
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width))+
+  geom_point()+
+  geom_smooth()##will add regression line that fits data (not linear)
+
+```
+
+## 3.2. "geometries"
+
+What geometries are there?? `geom_point`, `geom_bar`, `geom_line`, `geom_abline`, `geom_density`, etc etc. This would take me all day because there are so many
+
+You can group data by species by adding `color` argument into the `aes()` function. You can change the theme. 
+
+```{r}
+
+ggplot(iris, aes(x = Petal.Length, y = Petal.Width, color = Species))+
+  geom_point()+
+  geom_smooth(method = "lm")+ ## tell it you want linear regression lines
+  theme_classic()
+
+```
+
+### Back to the fish data
+
+We could mess around with some other plots types. For example: bar plot using `geom_bar()`
+
+```{r}
+
+library(plotrix)
+
+cpue_mean <- CP_cpue_MHW %>%
+  filter(species_code %in% c("BLU", "GPR", "KLP")) %>%
+  group_by(species_code, year, site)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))%>%
+  ggplot(aes (species_code, mean))+
+  geom_bar(stat = "identity")
+
+cpue_mean
+
+```
+
+Hmm... maybe not that informative. Is this total? Over all time?
+We could make this more informative, by graphing mean cpue over each year, coloring it by which phase of the marine heatwave, and breaking it up into species.
+
+```{r}
+
+cpue_mean2 <- CP_cpue_MHW %>%
+  mutate(year = as.factor(year),
+         phase = as.factor(phase))%>%
+  filter(species_code %in% c("BLU", "GPR", "KLP")) %>%
+  group_by(species_code, year, site, phase)%>%
+  summarise(mean = mean(cpue),
+                    sd = sd (cpue),
+                    n = n(),
+                    se = std.error (cpue))
+
+cpue_mean2$phase = factor(cpue_mean2$phase, levels = c("Before", "During", "After"))
+
+
+ggplot(data = cpue_mean2, aes(year, mean, fill = phase))+
+  geom_bar(stat = "identity", position = "dodge")+
+  scale_fill_manual(name = "MHW Phase", values = c("#5F9EA0", "#CD5B45", "#43CD80"))+
+  labs(y = "Mean CPUE\n", x = "\nYear")+
+  facet_grid(species_code~.)+
+  theme_bw()+
+  theme(panel.grid = element_blank())
+
+
+```
+
+# Lesson 4 - Statistics examples
+
+There is no end of the statistical tests that you can run using R. These tests are as varied and complicated as your master's projects will be.
+
+Here are a few examples of simple statistical tests that you might run using R: t-test (compare the means of two groups), chi-square (are two categorical variables related?), linear model (figure out a response variable based on the value of a predictor variable).
+
+
+## 4.1. T-test
+
+
+
+```{r}
+
+raw_dat %>%
+  filter(species_code == "BLU") %>% ## 28071 blue rockfish
+  summarise(mean_len = mean(length)) ## the mean length over all time is 26.39158 cm
+
+```
+
+### 4.1.1. One-way t-test
+
+Now we can run a one-way t-test to see if the mean length of blue rockfish in 2022 is the same as blue rockfish over all time.
+
+```{r}
+
+blue2022 <- raw_dat %>%
+  filter(species_code == "BLU", year == 2022)
+
+t.test(blue2022$length, mu = 26.39158) ## reject the null hypothesis (the means of the group are equal)
+
+```
+
+### 4.1.2. Two-way t-test
+
+Let's test to see if the mean length of blue rockfish in 2022 is the same as the mean length of blue rockfish in 2012.
+
+```{r}
+
+t.test(blue2022$length, blue2012$length) ## do NOT reject the null hypothesis. The means are statistically the same in 2012 as 2022
+
+
+```
+
+### 4.1.3 Paired t-test
+
+You would use this if you have subjects that get re-tested. For example, if you give a group of 10 students a math exam and grade it. Then you give the same group of student a math exam in one year and grade it, are the means of the two groups of scores the same? The synax is the same, but you would add the argument `paired = TRUE`. 
+
+```{r, eval = F}
+
+t.test(group1df$score, group2df$score, paired = TRUE)
+
+```
+
+Here is a good link with some additional explanation and resources: https://datascienceplus.com/t-tests/
+
+## 4.2. Chi-squared Test
+
+In general, chi-squared tests are used to determine if there is a significant relationship/correlation between two categorical groups.
+
+In this case H_0 is that there is NO relationship between the categorical data. For this test, there is already an extremely easy to understand and well-written example using the `iris` dataset (native to R, so you do not have to read in any data).
+
+Follow this link: https://statsandr.com/blog/chi-square-test-of-independence-in-r/
+
+We can do it together as an exercise.
+
+
+## 4.3. Linear regression
+
+This is another simple and useful statistical test in R. You have already done one of these  in this class. The basic syntax here is `lm(y ~ x, data = yourdataframe)`. Let's look at another fish dataset (sorry non-fish people). Here is an actual experiment my lab did. Since multiple fishes are caught at sea every day, filleted, and the carcasses discarded, we wanted to know if there was a way to figure out the whole fish length (before it is filleted) using the fish length after the fillets are removed. This has implications for increasing biological samples for fish stock assessments. So we went fishing, got some whole Blue Rockfish, measured the rockfish, filleted it, and re-measured it. So we ended up with a pre-fillet length and a post-fillet length.
+
+```{r}
+## read in the data
+
+pre_post <- read_csv(here("Data", "blue_pre_post.csv"))
+
+pre_post %>% head()
+
+## quick visual
+
+ggplot(data = pre_post)+
+  geom_point(aes(x = prefillet_length, y = postfillet_length))
+
+
+```
+
+It's pretty obvious that a good statistical test to use would be a linear model in this case. Let's do it.
+
+```{r}
+
+mod1 <- lm(postfillet_length ~ prefillet_length, data = pre_post)
+
+summary(mod1)
+
+```
+
+
+You know the formula of a line `y = mx + b`. In this case, your intercept b is 0.375 and the slope is 1.01. Almost a 1 to 1 ratio! Not all the data ecologists work with is this pretty, so you will probably have to do some other interesting modeling. 
+
+But maybe that is a lesson for a different time. Or take some Stats classes which will explain it much better than this.
+
+
+# Lesson 5 - Learning how to use Google
+
+Google is your friend. Stack overflow and other websites are going to be great resources for you. You just have to know WHAT to google. That is the most challenging part. 
+
+First, include 'r' and 'tidyverse' in your google search. 
+
+Second, learn some R terminology, including what you are trying to search for, packages, functions, arguments. 
+
+Third, learn how to read the unhelpful menu (but use your console to ask R questions, not your source editor). 
+
+
