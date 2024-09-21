@@ -1,6 +1,6 @@
 ---
 title: "R Basics"
-author: "Fall 2023 - BIO 503"
+author: "Fall 2023"
 date: "10/10/2023"
 output: 
   prettydoc::html_pretty:
