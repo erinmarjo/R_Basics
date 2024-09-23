@@ -20,6 +20,12 @@ knitr::opts_chunk$set(echo = TRUE,
 
 ```
 
+```{r}
+library(tidyverse)
+library(here)
+
+```
+
 
 The goal for the fall quarter is to diver deeper into R, R Studio, and Github, and explore what these have to offer you as young scientists. 
 
@@ -55,7 +61,10 @@ Here are a few best coding practices to consider:
 
 * If you are going to have multiple files that you want to organize in chronological order, consider naming the file with the date first *starting with the year like every other country except the US*.
 
-  * 2024-09-21_
+  * 2024-09-21_my_file_name
+  * 2024-09-30_the_other_version_my_file
+  
+Notice the name here with yyyy-mm-dd_name.
 
 
 ### Lesson activity 1 - make an R project
@@ -63,5 +72,24 @@ Here are a few best coding practices to consider:
 ### Lesson activity 2 - create subfolders to organize files
 
 
+# Lesson 2 - GitHubs
+
+# Lesson 3 - Basic Statistics with R
+
+Chi-square
+
+```{r}
+set.seed(42)
+initial <- factor(sample(c("Yes", "No", "Maybe"), 100, replace = TRUE))
+outcome <- factor(sample(c("Pass", "Fail"), 100, replace = TRUE))
+
+summary(table(initial, outcome))
+
+chisq.test(x = initial, y = outcome)
+
+vec <- runif(1000)
+quantile(vec, c(0.05, 0.95))
+
+```
 
 
