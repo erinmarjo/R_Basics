@@ -1,0 +1,304 @@
+---
+title: "Statistics - T-test and ANOVA"
+author: "Erin Johnston"
+date: "2024-11-12"
+output: 
+  prettydoc::html_pretty:
+  #html_document:
+    toc: true
+    #number_sections: true
+    toc_depth: 4
+    theme: cayman
+    #toc_float: true
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+library(knitr)
+library(plotrix)
+
+```
+
+Continuing on with our basic statistics lesson from last week, we will go down the flow chart in the other direction. What if we have a research question like the following:
+
+**Research question 1**: Are fish lengths different between the MPA and the REF sites?
+
+**Research question 2**: Are fish lengths different among MPAs from San Diego to Humboldt County?
+
+# T-TEST
+
+```{r guide, echo = F, fig.dim = c(6, 4), fig.align='center'}
+
+knitr::include_graphics("C:/Users/ejohn122/OneDrive - Cal Poly/Documents/GitHub/R_Basics/Images/stats_test_choose.png")
+
+
+```
+
+
+
+Looking at the flowchart for Research Question 1: 
+
+* Is the predictor variable categorical or quantitative?
+
+* Is the response variable categorical or quantitative?
+
+* How many groups are being compared?
+
+* What kind of test should we use? 
+
+
+    > T-Test!
+    
+More specifically we will use a two-sample t-test for our question. Let's get more specific with our question.
+
+*Are fish length different between the MPA and REF sites at Point Buchon for Vermilion Rockfish (over the lifetime of CCFRP)?*
+
+I queried the MS Access Database for all Vermilion Rockfish caught in PB from 2007-2022 (2023 not included for simplicity because of differences in how we measured fishes starting that season). I included area, site, year, length, species - then I am going to narrow down the focus of the data frame so we can use it for our second research question.
+
+```{r raw data}
+
+raw_dat <- read_csv(here("Data", "t_test_anova.csv"))
+
+## check out the data structure
+str(raw_dat)
+
+raw_dat_str <- raw_dat %>%
+  mutate(trip = as.factor(trip),
+         drift = as.factor(drift),
+         area = as.factor(area),
+         year = as.factor(year),
+         site = as.factor(site),
+         fish_id = as.factor(fish_id),
+         species = as.factor(species))
+
+head(raw_dat_str, 4)
+
+```
+
+Transform the data to be more informative to our research question (filter for different parameters; only select columns we are interested in)
+
+```{r research question 1 data transformation}
+
+## data for research question 1
+data_rq_1 <- raw_dat_str %>%
+  filter(!year == 2023,
+         area == "PB",
+         species == "VER") %>%
+  select(site, year, species, length_cm)
+
+head(data_rq_1)
+
+```
+
+## Investigation & Assumption Checking
+
+Let's do a quick investigative visuals and check assumptions before we continue with the stats
+
+```{r investigation and assumptions}
+
+## equal variance
+
+boxplot(data_rq_1$length_cm ~ data_rq_1$site)
+
+bartlett.test(length_cm ~ site, data = data_rq_1) 
+
+## doesn't have equal variance
+
+## normality
+
+hist(data_rq_1$length_cm)
+
+shapiro.test(data_rq_1$length_cm) 
+
+
+## hmm not normal
+
+
+## independence
+
+## no good way to check this... but if you used a randomized sampling design (which we did!) you can assume a good amount of independence
+
+
+
+```
+
+
+
+It looks like there is a difference between the length of Vermilion Rockfish in the MPA and the REF site... is it statistically different? Let's find out.
+
+## T-Test Hypothesis Testing
+
+Null hypothesis or H~0~ : There is NO difference in length of Vermilion Rockfish between the MPA and the REF site. Another way to say this: the true difference in means between MPA and REF is 0.
+
+Alternative hypothesis or H~a~: There is a difference in length of Vermilion Rockfish between the MPA and the REF site. Another way to say this: the true difference in means between MPA and REF is not 0.
+
+**REMEMBER** a small p-value will indicate more evidence in favor of the alternative hypothesis (we reject the null hypothesis), which means there is a difference, while a large p-value will indicate that we don't have enough evidence to reject the null hypothesis, which means there is no statistical difference that we can prove with our data.
+
+```{r t test}
+
+t_test_length <- t.test(length_cm ~ site, data = data_rq_1)
+
+t_test_length
+
+## anoter way to check for normality
+# qqnorm(data_rq_1$length_cm)
+# qqline(data_rq_1$length_cm)
+
+
+
+```
+
+   > Conclusion: We have enough evidence to reject the null hypothesis and conclude that there is a difference in mean length of Vermilion Rockfish between the Point Buchon MPA and REF sites.
+
+## Visualization T-Test
+     
+Now let's practice making a better looking visual
+
+```{r t test visualization}
+
+# data_rq_1_plot <- data_rq_1 %>%
+#   group_by(site) %>%
+#   mutate(se = std.error(length_cm))
+
+ggplot(data = data_rq_1) +
+  geom_boxplot(aes(x = site, y = length_cm, fill = site), color = "black")+
+  scale_fill_manual(name = "Site", values = c( "#C83948", "darkblue"))+
+  labs(x = "", y = "Length (cm)\n", title = "Vermilion Rockfish Length Comparison")+
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))
+
+
+
+```
+
+
+# ANOVA TIME
+
+```{r echo = F, fig.dim = c(6, 4), fig.align='center'}
+
+knitr::include_graphics("C:/Users/ejohn122/OneDrive - Cal Poly/Documents/GitHub/R_Basics/Images/stats_test_choose.png")
+
+
+```
+
+
+Looking at the flowchart for Research Question 2: 
+
+* Is the predictor variable categorical or quantitative?
+
+* Is the response variable categorical or quantitative?
+
+* How many groups are being compared?
+
+* What kind of test should we use? 
+
+     > ANOVA
+     
+*Are fish length different in MPAs from San Diego to Humboldt for Vermilion Rockfish?*
+     
+
+```{r research question 2 data transformation}
+
+data_rq_2 <- raw_dat_str %>%
+  filter(species == "VER",
+         !year == 2023,
+         site == "MPA") %>%
+  select(area, site, year, species, length_cm)
+
+```
+
+## Investigation & Assumption Checking
+
+Let's do a quick investigative visual and check our assumptions before we continue with the stats
+
+```{r}
+## equal variance
+
+boxplot(data_rq_2$length_cm ~ data_rq_2$area)
+
+bartlett.test(length_cm ~ area, data = data_rq_2) ## doesn't have equal variance
+
+## normality
+
+hist(data_rq_2$length_cm)
+
+shapiro.test(data_rq_2$length_cm) ## hmm not normal
+
+## independence
+
+## no good way to check this... but if you used a randomized sampling design (which we did!) you can assume a good amount of independence
+
+```
+ > "In general, a one-way ANOVA is considered to be fairly robust against violations of the normality [and equal variance] assumption as long as the sample sizes are sufficiently large. "
+
+
+A little messier, but it looks like there are some differences visually AT LEAST between some groups
+
+
+## ANOVA Hypothesis Testing
+
+Null hypothesis or H~0~ : There are NO difference in length of Vermilion Rockfish between any of the areas. Another way to say this: the true difference in means between all the areas is 0.
+
+Alternative hypothesis or H~a~: There is a difference in length of Vermilion Rockfish between the MPA and the REF site. Another way to say this: the true difference in means between MPA and REF is not 0.
+
+```{r}
+
+anova_model <- aov(length_cm ~ area, data = data_rq_2)
+
+summary(anova_model)
+
+#plot(anova_model, 2) ## another check for normality after model is made
+
+```
+   > Conclusion: We have enough evidence to reject the null hypothesis and conclude that there is a difference in mean length of Vermilion Rockfish in at least one area.
+
+Okay there is at least one area with a difference in Vermilion Rockfish Length... but where is the difference?
+
+## Post Hoc Testing
+
+```{r}
+
+post_hoc_test <- TukeyHSD(anova_model)
+
+post_hoc_test
+
+
+
+```
+
+## Visualization ANOVA
+     
+
+```{r anova visualization, fig.dim = c(8, 4), fig.align='center'}
+
+
+data_rq_2$area <- factor(data_rq_2$area, levels=c("CM", "TM", "SP", "BH", "AN", "PL", "BL", "PB", "CP", "AI", "SW","LJ"))
+
+ggplot(data = data_rq_2) +
+  geom_boxplot(aes(x = area, y = length_cm, fill = area), color = "black")+
+  labs(x = expression("Area from North" %->%South), y = "Length (cm)\n", title = "Vermilion Rockfish Length Comparison")+
+  theme_bw() +
+  theme(panel.grid = element_blank(),
+        plot.title = element_text(hjust = 0.5),
+        axis.text = element_text(size = 12),
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12))+
+  guides(fill=guide_legend(title="CCFRP Area"))
+
+
+
+```
