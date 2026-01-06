@@ -1,7 +1,7 @@
 ---
 title: "R Basics"
 author: "Erin Johnston"
-date: "1/5/2026"
+date: 
 output: 
   prettydoc::html_pretty:
   #html_document:
@@ -26,7 +26,7 @@ R is a programming language that is a very valuable tool for biologist and ecolo
 
 ## 1.1. Installing R and RStudio
 
-First, everyone should have R and RStudio installed on their computers. Here are some links to do that: https://cran.r-project.org/ (obviously... download R for windows if you have a PC or R for macOS if you are a plebian.) https://posit.co/download/rstudio-desktop/ Download R studio for whatever kind of laptop or computer you have.
+First, everyone should have R and RStudio installed on their computers. Here are some links to do that: https://cran.r-project.org/ (obviously... download R for windows if you have a PC or R for macOS if you are someone who uses that...) https://posit.co/download/rstudio-desktop/ Download R studio for whatever kind of laptop or computer you have.
 
 ## 1.2. The RStudio interface
 
@@ -34,7 +34,7 @@ The RStudio IDE has four main windows. The Console or command line, the Source E
 
 * **Console**: The console or command line is where you can type code and execute it immediately. This is helpful for checking things out that you don't want saved in your code file. You can use this as a calculator, you can use this to check out parts of your data, you can use this to install packages (*NEVER* install packages in your 'script' if you plan to send your script to collaborators because not everyone will want to permanently change their packages to accomodate your). You run the code you type here simply by pressing `enter`.
 
-* **Source Editor**: This is where you will be working most often. This is where you will write code that you want to save. Code is not *evaluated* in the editor. You are editing and saving your code here. To run code in the editor you need to press `Ctrl + enter`, or if you are a plebian (aka Mac user) `command + enter`.
+* **Source Editor**: This is where you will be working most often. This is where you will write code that you want to save. Code is not *evaluated* in the editor. You are editing and saving your code here. To run code in the editor you need to press `Ctrl + enter`, or if you are a ... Mac user `command + enter`.
 
 * **Environment**: The environment window is extremely useful in showing you the type of objects you have in your workspace. If you assign a value or dataframe to an object, it will appear here. For example if you want to assign the value `7` to the object called `my_value`, it will appear there. Run this code:
 
@@ -49,6 +49,7 @@ You can see that you *assigned* the value `7` to the object that you named `my_v
 ```{r}
 
 my_df <- data.frame(numbers = c(1:20))
+
 
 ```
 
@@ -191,7 +192,7 @@ The first step is to read in the data.
 raw_dat <- read_csv(here("Data", "CCFRP_CP_2012_2022.csv"))
 
 raw_dat %>%
-  head () ## take a look at the data
+  head (5) ## take a look at the data
 
 ```
 
@@ -499,9 +500,8 @@ leaflet()%>%
 ```
 
 
-you could even embarass your advisor using cowplot....
 
-```{r, eval = T, echo = F}
+```{r, eval = F, echo = F}
 
 library(magick)
 library(cowplot)
