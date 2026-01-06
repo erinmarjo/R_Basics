@@ -1,0 +1,225 @@
+---
+title: "Analyses - CCFRP Angler Survey Publication"
+author: "Erin Johnston"
+date: "10/29/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+
+```
+
+Analyses after data processing steps:
+
+#### Research Question 1
+
+The dataset `opinion_change_dat` contains vars on 256 CCFRP volunteer angler respondents. The outcome variable is **qual_delta**, categories on positive change, negative change, and no change. The predictor vars are **region**, North/Central/South, and **num_trips** which asks categorically the number of CCFRP respondents had participtaed on with categories as follows:
+
+* 1 = 1
+* 2 = 2-5
+* 3 = 6-10
+* 4 = 11-19
+* 5 = 20+
+
+```{r multinomial}
+
+opinion_change_dat$qual_delta2 <- relevel(opinion_change_dat$qual_delta, ref = "No Change")
+
+model_op_change <- multinom(qual_delta2 ~ region + num_trips , data = opinion_change_dat)
+summary(model_op_change)
+
+z <- summary(model_op_change)$coefficients/summary(model_op_change)$standard.errors
+z
+
+p <- (1 - pnorm(abs(z), 0, 1)) * 2
+p
+
+```
+
+#### Research Questions 2
+
+Perceptions vs Ecological data
+This will first be analyzed for **statewide angler responses**
+
+```{r}
+
+perceived_mpa <- dat_processed %>%
+  select(id, q3, region, q15, q16, q17, q18) %>%
+  filter(q15 == 1) %>%
+  mutate(q16 = as.factor(q16),
+         q17 = as.factor(q17),
+         q18 = as.factor(q18))
+
+perception_dat <- perceived_mpa %>%
+  filter(!q16 == 3, !q17 == 3, !q18 == 3) %>%
+  select(region, q16, q17, q18)
+
+write_csv(perception_dat, here("Data", "perception_dat.csv"))
+
+### abundance
+## state
+high_fish_state <- perceived_mpa %>%
+  filter(!q16 == 3) %>%
+  count(q16)
+
+file_path <- "https://www.sthda.com/sthda/RDoc/data/housetasks.txt"
+housetasks <- read.delim(file_path, row.names = 1)
+dt <- as.table(as.matrix(housetasks))
+balloonplot(t(dt), main ="housetasks", xlab ="", ylab="",
+            label = FALSE, show.margins = FALSE)
+wut <- chisq.test(housetasks)
+wut$observed
+wut$expected
+corrplot(wut$residuals, is.cor = FALSE)
+
+high_fish_statetest <- perceived_mpa %>%
+  filter(!q16 == 3) %>%
+  group_by(region) %>%
+  count(q16) %>%
+  mutate(q16 = case_when(
+    q16 == "1" ~ "MPA",
+    q16 == "2" ~ "REF",
+    q16 == "4" ~ "No Difference"
+  )) %>%
+  pivot_wider(names_from = q16,
+              values_from = n)
+
+forbplot <- high_fish_statetest %>% remove_rownames %>% column_to_rownames(var="region")
+
+dtest <- as.table(as.matrix(forbplot))
+balloonplot(t(dtest), main ="test test", xlab ="", ylab="",
+            label = FALSE, show.margins = FALSE)
+
+lab_chisq <- chisq.test(forbplot[3,])
+lab_chisq <- chisq.test(forbplot)
+lab_chisq$observed
+lab_chisq$expected
+
+library(corrplot)
+corrplot(lab_chisq$residuals, is.cor = FALSE)
+
+## central CA
+high_fish_c <- perceived_mpa %>%
+  filter(!q16 == 3, region == "Central") %>%
+  count(q16)
+
+## southern CA
+high_fish_s <- perceived_mpa %>%
+  filter(!q16 == 3, region == "Southern") %>%
+  count(q16)
+
+## northern CA
+high_fish_n <- perceived_mpa %>%
+  filter(!q16 == 3, region == "Northern") %>%
+  count(q16)
+
+### diversity
+## state
+high_diversity_state <- perceived_mpa %>%
+  filter(!q17 == 3) %>%
+  count(q17)
+
+## central CA
+high_diversity_c <- perceived_mpa %>%
+  filter(!q17 == 3, region == "Central") %>%
+  count(q17) %>%
+  add_row(q17 = "2", n = 0)
+
+## southern CA
+high_diversity_s <- perceived_mpa %>%
+  filter(!q17 == 3, region == "Southern") %>%
+  count(q17)
+
+## northern CA
+high_diversity_n <- perceived_mpa %>%
+  filter(!q17 == 3, region == "Northern") %>%
+  count(q17) 
+
+### size
+## state
+high_size_state <- perceived_mpa %>%
+  filter(!q18 == 3) %>%
+  count(q18)
+
+## central CA
+high_size_c <- perceived_mpa %>%
+  filter(!q18 == 3, region == "Central") %>%
+  count(q18)
+
+## southern CA
+high_size_s <- perceived_mpa %>%
+  filter(!q18 == 3, region == "Southern") %>%
+  count(q18)
+
+## nortern CA
+high_size_n <- perceived_mpa %>%
+  filter(!q18 == 3, region == "Northern") %>%
+  count(q18)
+
+```
+
+```{r chi square tests}
+
+exp <- rep(1/3, 3)
+
+## statewide chi square tests of equal frequency
+chisq.test(high_fish_state$n, p = exp)
+chisq.test(high_diversity_state$n, p = exp)
+chisq.test(high_size_state$n, p = exp)
+
+## central coast chi square tests of equal frequency
+chisq.test(high_fish_c$n, p = exp)
+chisq.test(high_diversity_c$n, p = exp)
+chisq.test(high_size_c$n, p = exp)
+
+## southern coast chi square tests of equal frequency
+chisq.test(high_fish_s$n, p = exp)
+chisq.test(high_diversity_s$n, p = exp)
+chisq.test(high_size_s$n, p = exp)
+
+## norhtern coast chi square tests of equal frequency
+chisq.test(high_fish_n$n, p = exp)
+chisq.test(high_diversity_n$n, p = exp)
+chisq.test(high_size_n$n, p = exp)
+
+```
+
+
+#### Research Question 3
+
+```{r}
+
+### why volunteer with CCFRP
+why_volunteer <- dat_processed %>%
+  select(id, q3, region, q19) %>%
+  mutate(q19 = as.factor(q19))
+
+why_volunteer <- why_volunteer %>%
+  count(q19) %>%
+  drop_na() %>%
+  mutate(perc = n/sum(n))
+
+exp_q19 <- rep(1/5, 5)
+
+chisq.test(why_volunteer$n, p = exp_q19)
+
+### do anglers tell their peers about CCFRP
+peer_comm <- dat_processed %>%
+  select(id, q3, region, q8) %>%
+  mutate(q8 = as.factor(q8))
+
+peer_comm <- peer_comm %>%
+  count(q8) %>%
+  drop_na() s
+
+exp_q8 <- rep(1/2, 2)
+
+chisq.test(peer_comm$n, p = exp_q8)
+
+
+```
+

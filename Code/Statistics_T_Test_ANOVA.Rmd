@@ -39,7 +39,7 @@ Continuing on with our basic statistics lesson from last week, we will go down t
 
 ```{r guide, echo = F, fig.dim = c(6, 4), fig.align='center'}
 
-knitr::include_graphics("C:/Users/ejohn122/OneDrive - Cal Poly/Documents/GitHub/R_Basics/Images/stats_test_choose.png")
+knitr::include_graphics(here("Images", "stats_test_choose.png"))
 
 
 ```
@@ -190,8 +190,7 @@ ggplot(data = data_rq_1) +
 
 ```{r echo = F, fig.dim = c(6, 4), fig.align='center'}
 
-knitr::include_graphics("C:/Users/ejohn122/OneDrive - Cal Poly/Documents/GitHub/R_Basics/Images/stats_test_choose.png")
-
+knitr::include_graphics(here("Images", "stats_test_choose.png"))
 
 ```
 
@@ -234,9 +233,9 @@ bartlett.test(length_cm ~ area, data = data_rq_2) ## doesn't have equal variance
 
 ## normality
 
-hist(data_rq_2$length_cm)
+hist(sqrt(data_rq_2$length_cm))
 
-shapiro.test(data_rq_2$length_cm) ## hmm not normal
+shapiro.test(sqrt(data_rq_2$length_cm)) ## hmm not normal
 
 ## independence
 
@@ -302,3 +301,4 @@ ggplot(data = data_rq_2) +
 
 
 ```
+

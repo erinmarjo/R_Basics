@@ -1,0 +1,464 @@
+---
+title: "Data Processing - CCFRP Angler Survey Publication"
+author: "Erin Johnston"
+date: "10/29/2023"
+output: html_document
+---
+
+Steps to process data from raw form for analyses related to the publication:
+
+   > Participation in Collaborative Fisheries Research Improves the Perceptions of Recreational Anglers towards Marine Protected Areas.
+
+### General Data Processing   
+
+1. Add permanent record number to each respondent.
+
+2. Implement rules for survey response rate.
+
+    a. Progress must be 100% or 'Finished == 1'. For the response to count, recipients had to have finished and clicked 'finish' because we won't know if people came back and completed the survey later otherwise.
+  
+    b. Distribution channel must be 'anonymous' not 'preivew'. 'Preview' means that the survey was opened through the preview link.
+  
+    c. More than 10% of the questions must be answered (if more than 90% unanswered or 55 NAs, strike the record). This will take care of situations in which someone opened the survey and clicked 'finish' at the end without answering anything.
+
+3. Implement rules for time volunteered (first year started)
+
+    a. If question mark, take question mark out and use year
+    
+    b. 'Since first year' or 'since beginning':
+    
+        i. CP and MLML (central CA): 2007
+        
+        ii. Scripps, UCSB, Bodega: 2017
+        
+        iii. Humboldt: 'first year' may not have been 2017. May have to drop this year if Humboldt cannot say for sure if 2017 was the first year.
+        
+    c. Answers that had nothing to do with the question (i.e., 'Facebook') become 'NA'
+    
+    d. Time ranges (i.e., 2007 or 2008) are given the more conservative estimate (2008 for this example)
+    
+    e. Years before 2007 become 2007 regardless of institution because they may have started earlier at a different school
+    
+    f. Years that could be multiple years (i.e., 20118 could either be 2011 or 2018) become 'NA'
+    
+    **Note: Out of 262 responses, 44 put something other than a four digit year (including NAs, text, and question marks)**
+
+4. Region is assigned based on institution that respondent volunteered with the most
+
+    a. Southern = Scripps, UCSB
+    
+    b. Central = CP SLO, MLML
+    
+    c. Norther = Bodega, Humboldt
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      message = F,
+                      warning = F)
+
+```
+
+```{r packages}
+
+library(tidyverse)
+library(here)
+library(rstatix)
+library(nnet)
+library(patchwork)
+
+```
+
+```{r general data processing}
+
+survey_dat <- read_csv(here("Data", "CCFRP_angler_survey_2021_2022-02-24_csv_values.csv"))
+
+survey_dat <- survey_dat[-c(1:2),]
+
+dat_processed <- survey_dat %>%
+  mutate(id = row_number()) %>%
+  select(id, StartDate:Q38) %>%
+  rename_with(str_to_lower) %>%
+  filter(finished == 1,
+         distributionchannel != "preview") %>%
+  mutate(unanswered = rowSums(is.na(.))) %>%
+  arrange(desc(unanswered)) %>%
+  filter(unanswered < 55) %>%
+  select(id, q1, q4, startdate:unanswered) %>%
+  arrange(id) %>%
+  mutate(first_year = case_when(
+    q1 %in% c(2007:2021) ~ as.numeric(q1), ## 48 NA
+    q1 == "I don't remember, maybe 5 years ago." ~ 2016, ## id 8
+    q1 == "2018(?)" ~ 2018, ## id 40
+    q1 == "2012 ( I think)" ~ 2012, ## id 50
+    q1 == "since the second year" ~ 2008, ## id 54 - from MLML
+    q1 == "August 14,2013" ~ 2013, ## id 55
+    #q1 == "Facebook" ~ 0000, ## id 58
+    q1 == "2007 out of Moss Landing, or whatever was the first year for CCFRP" ~ 2007, ## id 73
+    q1 == "Don't know, maybe 2014" ~ 2014, ## id 74
+    q1 == "1999" ~ 2007, ## id 76
+    q1 == "2008??" ~ 2008, ## id 80
+    q1 == "2016 ?" ~ 2016, ## id 83
+    q1 == "The  first year it came out. I do not know the exaact timeframe" ~ 2017, ## id 89 - Scripps
+    q1 == "2007 or 2008" ~ 2008, ## id 94
+    q1 == "The first year" ~ 2007, ## id 98 - Cal Poly SLO
+    q1 == "Since the beginning" ~ 2017, ## id 104 - Scripps
+    q1 == "2019?" ~ 2019, ## id 106
+    q1 == "about 2018???" ~ 2018, ## id 114
+    q1 == "March 2013 with Lyall and Devon" ~ 2013, ## id 115
+    q1 == "Not sure...however, I was involved from \"day 1\"...the very first year" ~ 2017, ## id 117 - Scripps
+    q1 == "2006 or 2007" ~ 2007, ## id 143
+    q1 == "2006-2007 or there about" ~ 2007, ## id 153
+    q1 == "First year the program started in the central coast." ~ 2007, ## id 164
+    #q1 == "?" ~ 0000, ## id 167
+    #q1 == "Whenevet it started" ~ 0000, ## id 182 - Humboldt. Not sure what start year
+    q1 == "2018 (I think)" ~ 2018, ## id 192
+    q1 == "The first year of the program 2015 or2016." ~ 2017, ## id 201 - Scripps
+    q1 == "Approximately 8 years" ~ 2013, ## id 202
+    #q1 == "Can’t remember" ~ 0000, ## id 209
+    q1 %in% c(2005, 2006) ~ 2007, ## id 212 & 216
+    q1 == "the first year" ~ 2007, ## id 236- Cal Poly SLO
+    #q1 == "20118" ~ 0000, ## id 243
+    q1 == "2009?" ~ 2009, ## id 249
+    q1 == "2017?" ~ 2017, ## id 251
+    q1 == "not sure, estimated 8 yrs" ~ 2013, ## id 279
+    #q1 == "I haven’t been out yet but very interested" ~ 0000, ## id 294
+    q1 == "Not sure of the year, however, it was the FIRST trip out of San Diego on the Outer Limits" ~ 2017, ## id 297
+    q1 == "maybe 2015" ~ 2015, ## id 307
+    q1 == "2017 or 2016" ~ 2017, ## id 318 - Bodega & also more conservative
+    q1 == "2018 I think" ~ 2018, ## id 322
+    q1 == "2010 through 2015" ~ 2010, ## id 326
+    q1 == "Don't remember really well but I believe 2013 or 2014." ~ 2014, ## id 327
+    #q1 == "2012 I think but it is so long ago I forget the exact date - Calico bass tagging" ~ 0000, ## id 332. Not sure what to do in this case
+    q1 == "2002" ~ 2007, ## id 333 - MLML
+    q1 == "Approximately 2001" ~ 2007, ## id 335 - MLML
+    q1 == "When it began or very close" ~ 2007), ## id 336 
+    region = case_when(
+    q4 %in% c(1,2) ~ "Northern",
+    q4 %in% c(3,4) ~ "Central",
+    q4 %in% c(5,6) ~ "Southern")) %>%
+  select(-c(startdate, ipaddress, recordeddate, responseid, recipientfirstname, 
+            recipientlastname, recipientemail, externalreference, locationlatitude,
+            locationlongitude, userlanguage, status, progress, finished))
+
+```
+
+### Specific Data Processing Steps
+
+#### Research Question 1 Specific Data Processing
+
+  > Are opinions about MPAs different after volunteering with CCFRP and is there evidence of differential patterns in angler opinions related to geographic location or stakeholder participation metrics? 
+
+```{r data processing question 1}
+
+opinion_change_dat <- dat_processed %>%
+  select(id, first_year, region, q9, q11, q3, q10, q22, q35, q36, q37) %>%
+  mutate(q9 = case_when(
+    q9 == 6 ~ 3,
+    TRUE ~ as.numeric(q9)),
+    q11 = case_when(
+      q11 == 6 ~ 3,
+      TRUE ~ as.numeric(q11)),
+    quan_delta = q9-q11)%>%
+  filter(!id == 227) %>%
+  mutate(qual_delta = case_when(
+    quan_delta < 0 ~ "Negative Change",
+    quan_delta == 0 ~ "No Change",
+    quan_delta > 0 ~ "Positive Change"),
+      management = case_when(
+        grepl("1", q35) ~ "yes",
+        grepl("2", q35) ~ "yes",
+        grepl("3", q35) ~ "yes",
+        grepl("4", q35) ~ "no"),
+      fishing = case_when(
+        q36 == 1 ~ "yes",
+        q37 == 1 ~ "yes"),
+    fishing = replace_na(fishing, "no"),
+      before_op = case_when(
+        grepl("1", q10) ~ "Increase",
+        grepl("2", q10) ~ "Increase",
+        grepl("3", q10) ~ "Decrease",
+        grepl("4", q10) ~ "Deacrease",
+        grepl("5", q10) ~ "No Effect",
+        grepl("6", q10) ~ "No Effect",
+        grepl("7", q10) ~ "No Opinion",
+        grepl("8", q10) ~ "No Opinion"
+      )) %>%
+  rename(num_trips = q3,
+         cons_minded = q22) %>%
+  mutate(first_year = as.factor(first_year),
+         region = as.factor(region),
+         num_trips = as.factor(num_trips),
+         cons_minded = as.factor(cons_minded),
+         qual_delta = as.factor(qual_delta),
+         management = as.factor(management),
+         fishing = as.factor(fishing)) %>%
+  select(id, qual_delta, region, num_trips, management, fishing, cons_minded,
+         first_year, q9, q11, q35, q36, q37, quan_delta) %>%
+  drop_na(c(num_trips, region, management))
+
+```
+
+#### Research Question 2 Specific Data Processing
+
+  > Are effects of MPAs reflected accurately in CCFRP volunteer angler perceptions of fishery metrics?
+
+NOTE: On the survey this is question 16a-16c, in the csv it is q16, q17, & q18. The respondents were only allowed to answer this question if they answered yes to question 15 ('Have you ever fished in a Marine Protected Area before it was protected or while volunteering with CCFRP?')
+
+The answer choices are: 1. MPAs, 2. Areas open to fishing, 3. I don't know, 4. No difference
+
+```{r data processing question 1}
+
+high_fish <- dat_processed %>%
+  select(id, q3, region, q15, q16) %>%
+  filter(q15 == 1) %>%
+  mutate(q16 = as.factor(q16)) %>%
+  filter(!q16 == 3)
+
+high_diversity <- dat_processed %>%
+  select(id, q3, region, q15, q17) %>%
+  filter(q15 == 1) %>%
+  mutate(q17 = as.factor(q17)) %>%
+  filter(!q17 == 3)
+
+high_size <- dat_processed %>%
+  select(id, q3, region, q15, q18)%>%
+  filter(q15 == 1) %>%
+  mutate(q18 = as.factor(q18)) %>%
+  filter(!q18 == 3)
+
+```
+
+#### Research Question 3 Specific Data Processing
+
+  > Has CCFRP impacted angler views on the scientific process, marine conservation, and stewardship? 
+  
+```{r data processing question 1}
+
+q5_process <- dat_processed %>%
+  select(id, first_year, region, q5, q5_6_text) %>%
+  rename(text = q5_6_text)%>%
+  mutate(q5_b = case_when(
+    ## id 53. Original answer was 1,3,4,5,6. This answer fits in 3 & 4 which were both already selected.
+    text == "To learn about the impact we make in the water and learn how this research helps us move toward the right direction" ~ "1,3,4,5",
+    
+    ## id 55. OA was 1,2,5,6. This answer fits with 3
+    text == "To meet the staff and add to their research by being one of the fishermen" ~ "1,2,3,5", 
+    
+    ## id 73. OA was 2,3,4,5,6. This answers fits with 
+    text == "To help validate the need for and benefit from MPAs" ~ "2,3,4,5",
+    
+    ## id 82
+    text == "help evaluate conservation efforts" ~ "1,2,3,4,5",
+    
+    ## id 93
+    text == "Calico bass sandbass" ~ "1,2,3,4,5",
+    
+    ## id 95
+    text == "To see how the reserch in the closed areas was being conducted." ~ "1,2,3",
+    
+    ## id 109
+    text == "I feel it is of critical importanceto gain as much data as we can to help manage our fisheries" ~ "1,2,3,4,5",
+    
+    ## id 125
+    text == "Engage in mpa science, conservation" ~ "3,4,5",
+    
+    ## id 130
+    text == "To learn about what you are studying and a free fishing trip." ~ "1,3",
+    
+    ## id 143
+    text == "I enjoy being on a boat in the ocean." ~ "1,3,4",
+    
+    ## id 199
+    text == "To Help with Research" ~ "1,3",
+    
+    ## id 201
+    text == "To help with the science of monitoring the fisheries." ~ "3,4",
+    
+    ## id 223
+    text == "Time on the ocean" ~ "1,3,4,5",
+    
+    ## id 225
+    text == "To enjoy all of the experiences on the trip (ie. birds, marine mammals) not just fishing." ~ "1,3,4,5",
+    
+    ## id 226
+    text == "enjoy working ad seeing the research crews" ~ "1,3,4,5",
+    
+    ## id 227
+    text == "To assist in ocean preservation and and learn more about the fishery" ~ "3,4,5",
+    
+    ## id 266
+    text == "Be on a boat" ~ "1,2,3,4,5",
+    
+    ## id 292
+    text == "good volunteer research experience" ~ "1,2,3,4",
+    
+    ## id 324
+    text == "To help gather needed information on fisheries" ~ "1,2,3,4,5",
+    
+    ## id 327
+    text == "Helping CCFRP achieve their goals." ~ "1,2,3,4,5"
+  ))
+
+### STEP 1: first checking out all answers that contain '8' which was the answer option "I did not learn anything"
+no_learn <- dat_processed %>%
+  select(id, first_year, region, q6, q6_9_text) %>%
+  mutate(nolearn = case_when(grepl("8", q6) ~ "HERE")) %>%
+  filter(nolearn == "HERE")
+
+## id 95 will be recoded from 8, 9 to just 8. This respondent used 9 to talk about how they didn't learn anything/had issues with the program
+
+## id 103 will be recoded from 1,5,8,9 to 1,5. 8 is removed because they learned something (1 & 5) and 9 will be removed because it was a comment about themselves, not about what they learned "I personally fish a lot so understand"
+
+## id 192 will be recoded from 3,8 to just 3. 8 is removed because they learned something (3).
+
+q6_process <- dat_processed %>%
+  select(id, first_year, region, q6, q6_9_text) %>%
+  rename(text = q6_9_text)%>%
+  mutate(q6_b = case_when(
+    text == "I learned how the MPAs were not based off of much science at all and most of them were created because of money. I was at many of the original meetings to oppose the establishment of the MPAs and here we are years later and the state has not stood true to their word." ~ "8", ## id 95
+    
+    text == "I personally fish a lot so understand" ~ "1,5", ## id 103
+    
+    q6 == "38" ~ "3",
+    
+    text == "Always educational to observe the different catch rates based on the different presentations." ~ "1,4", ## id 11. taking out '9' because presentations are not made while volunteering for CCFRP
+    
+    text == "Attended special events held" ~ "2,3,5,7", ## id 12. taking out '9' because attending special events is not something you can learn while volunteering with ccfrp
+    
+    text == "Constant learning adventure." ~ "1,2,3,4,5,6,7", ## id 16. taking out '9', while it is a constant learning adventure this other category was not a new category of something learned while volunteering
+    
+    text == "Plan to go on first trip" ~ "NA", ## id 62 shouldn't even be in the survey since this person has not volunteered with CCFRP yet.
+    
+    text == "MPAs - Sustain, protect, and increase domestic seafood supply. Maintain and enhance recreational and subsistence fishing opportunities. Protect ecosystem health and sustainability. Create jobs, support related economic and social benefits, and sustain community resilience." ~ "1,2,3,4,5,6,7" ,## id 75. This answer is the same as answer category #2 and #7, which they had already selected.
+    
+    text == "Working together to acheve conservation goal" ~ "1,2,4,5,6,7", ## id 125 while this is true, it isn't something explicitly learned on a ccfrp trip.
+    
+    text == "Value of MPA's to fisheries" ~ "5,7", ## id 131. This is the same as answer category # 7 which this person already selected
+    
+    text == "What a freakin deacon is! Sebastes diaconus!" ~ "1,4,5,6", ## id 175. So stoked this person learned about deacon rockfish! But this answer category fits both 1 and 4, both of which this person already selected - so '9' is now deleted.
+    
+    text == "I learned a lot about the rockfish population and have also gained a lot of respect for rockfish. I had no idea how old they live to be, or that some are live bearing, or spend their whole lives in a relatively small area" ~ "1,2,3,4,5,6,7", ## id 178. yes! Stoked on the specifics of this answer, however, it falls withing category 1 which this person had already selected - therefore 9 is now deleted.
+    
+    text == "In favor of MPAs" ~ "1,5,7", ## id 191. Taking out 9 because this is an opinion about MPAs and not something learned on a ccfrp fishing trip
+    
+    text == "I have worked on many other fish data collecting trips, where I gained much of the information above." ~ "5", ## id 201. which this is great, this answer was about information learned while doing other things besides ccfrp
+    
+    text == "This is my first journey." ~ "NA" , ## id 227 taking this out because the person had not volunteered with us yet... and the answer doesn't have to do with something learned 
+    
+    text == "Have not been out with the research go up yet" ~ "NA", ## id 294. this answer should not be here because this person has not volunteered with us yet.
+    
+    TRUE ~ as.character(q6)
+  )) %>%
+  filter(!q6_b == "NA")
+
+## id 6 = "Learn to fish and not kill the fish" - keeping. this is something learned
+## id 22 = "How dedicated researchers are" - keeping. this is something learned
+## id 30 = "I learned that a lot of really dedicated young people are working hard to conserve our ocean resources" - keeping. this is something learned
+## id 36 = "Learned about the other researchbeing conducted for example the water born DNA sampling conducted simultaneously with our drifts. Also learned more about the internships, the university affiliations and broader." - keeping. this is something learned.
+## id 54 = "learned to be sociable with everybody" - keeping. I guess this could be something you learn during a ccfrp trip
+## id 68 = "Work as a marine biologist so it is nice to see how others do sampling" - keeping. Seeing other peoples sampling technique could be a category of something learned
+## id 81 = "I learned about what they record and why they record it. As well as what species are of intrest" - keeping. this is something learned
+## id 117 = "Unless properly managed, our fisheries are doomed!!" - keeping. this is something learned.
+## id 123 = "I learned that staff really need to develop better trainings for our CCFRP folks prior to sending them out on a commercial vessel. Training in handling fish, fish ID etc needs to be completed before the sampling events. I belive this is required in the scientific collecting permit, those conditions need to be followed and training completed so the fish are released properly and data is clean." - keeping. well... this is certainly something learned, though not positive.
+## id 150 = "I got to know Grant and his team, I saw some of th emost scenic coast line and larned how fishing (state) regulations relates to data collected from these trips" - keeping, almost seems to fall along the same category as #7, but seems different enough to keep as 9
+## id 157 = "effectiveness of barbless hooks" - keeping. this is something learned
+## id 182 = 'Many things beyond your list. We spotted rare dolphins one time among other things. Also learning the ins ad outs of new harbors interested me." - keeping. This person specifically identified that they learned things beyond the provided list of answer categories
+## id 189 = "I was able to observe the techniques for mapping and species location" - keeping. this is definitely something learned
+## id 194 == "Improved my fishing techniques" - keeping. this is something learned
+## id 198 = "It appears (with a cursor look at the data) the population and size of the fish are larger in the MPAs than the reference areas" - keeping. this is something learned
+## id 211 = "I learned how rigorous the monitoring protocol was" - keeping. this is something learned
+## id 216 = "I learned about the amazing dedication of Dean Wendt, Grant Waltz, and others who have kept this important work alive." - keeping. this is something that could be learned.
+## id 223 = "Better understanding of the metric system and some Latin." - keeping. and pleasantly surprised, this is something learned and something I hadn't even considered that people could be learning while volunteering
+## id 226 = "Learned how to identify male from female fish from the anal area; learne dthe different terminologies to describe condition of the fish when collected (stomach in mouth, stomach out of mouth, eyes popped out, etc.) when fighing in the aft of the boat)" - keeping 9. this is something learned. However I may actually add 1 to their answer based on what they wrote, the first part is all part of the first category which is 'I learned more about the wide range of fish species caught in this area' - will think on this.
+## id 265 = "I learned that Jellyfish blooms are high. Seems as if this was present on 2014 and could be attributed to higher water temps and fertilizer/excess chemical runoff." - keeping. this is something learned and a good observation
+## id 272 = "Boats, engagement, values to long term studies" - keeping. this could be something learned
+## id 288 = I learned what research plan was applied to recording data what would be reliable and valid" - keeping. this is something learned
+## id 290 = "I larned to be a more efficient fisher person."- keeping. this is something learned
+## id 292 = "the long bureaucratic process entailed with starting and maintaining a program like this" - keeping. this is something learned
+## id 297 = "Hard work will pay off..." - keeping. this could be something learned, wish this person had expanded more
+## id 309 = "As a past fisheries scientist I was able to see how others in the fishing community interact with our shared resource and how they have come to understand and respect MPAs" - keeping. this is something learned from the 'other side' and a cool lesson.
+## id 318 = "about reading marine elctronics from Captain Tom!!" - keeping. this could certainly be something learned
+## id 321 = "I learned about the tremendous number of school fish in Point Lobos MPA" - keeping. This person did not ansewr #1 which would be the closest cateogry so they strongly felt it did not fit within that category.
+## id 332 = "learned about the catch rates of various species both in and oput the MPA's" - keeping. this is something learned
+
+
+### STEP 2: Now check out all answer that had '9' check marked - save as a separate file and then go back and add to the case_when above to change answer categories.
+
+q6_other <- dat_processed %>%
+  select(id, first_year, region, q6, q6_9_text) %>%
+  mutate(other = case_when(grepl("9", q6) ~ "HERE")) %>%
+  filter(other == "HERE")
+
+# df %>% separate(x, c("a", "b", "c"))
+
+q6_separate <- q6_process %>% 
+  mutate("a1" = case_when(grepl("1", q6_b)~ "1"),
+         "a2" = case_when(grepl("2", q6_b)~ "2"),
+         "a3" = case_when(grepl("3", q6_b)~ "3"),
+         "a4" = case_when(grepl("4", q6_b)~ "4"),
+         "a5" = case_when(grepl("5", q6_b)~ "5"),
+         "a6" = case_when(grepl("6", q6_b)~ "6"),
+         "a7" = case_when(grepl("7", q6_b)~ "7"),
+         "a8" = case_when(grepl("8", q6_b)~ "8"),
+         "a9" = case_when(grepl("9", q6_b)~ "9"))
+  
+test <- q6_separate %>% count(a1, a2, a3, a4, a5, a6, a7, a8, a9)
+
+q6_separate %>% count(a7)
+
+## only 4 people answered #8
+
+## if I want to do a cochrans q test???
+
+q6_process_b <- q6_process %>%
+  select(id, first_year, region, q6_b)%>%
+  mutate(q6_1 = case_when(grepl("1", q6_b) ~ 1),
+         q6_2 = case_when(grepl("2", q6_b) ~ 1),
+         q6_3 = case_when(grepl("3", q6_b) ~ 1),
+         q6_4 = case_when(grepl("4", q6_b) ~ 1),
+         q6_5 = case_when(grepl("5", q6_b) ~ 1),
+         q6_6 = case_when(grepl("6", q6_b) ~ 1),
+         q6_7 = case_when(grepl("7", q6_b) ~ 1),
+         q6_8 = case_when(grepl("8", q6_b) ~ 1),
+         q6_9 = case_when(grepl("9", q6_b) ~ 1))%>%
+  select(id, q6_1:q6_9) %>%
+  mutate_all(~replace_na(.,0)) %>%
+  pivot_longer(cols = starts_with("q6_"),
+               names_to = "treatment",
+               values_to = "outcome")
+
+### since this was a select all that apply question, I have to make sure that there are no contradictory answers. If someone answered 4 (I am not interested in learning about the data that CCFRP collect) they cannot also have answered one of the other categories.
+
+q7_ans4 <- dat_processed %>%
+  select(id, first_year, region, q7) %>%
+  mutate(nolearn = case_when(grepl("4", q7) ~ "HERE")) %>%
+  filter(nolearn == "HERE")
+
+
+# q7_process_a <- dat_processed %>%
+#   select(id, first_year, region, q7) %>%
+#   separate_rows(q7)
+
+q7_process_b <- dat_processed %>%
+  select(id, first_year, region, q7)%>%
+  filter(!id %in% c(62, 227, 294)) %>% ## these people indicate that they have not been out before with ccfrp 
+  mutate(q7 = case_when(
+    id == 150 ~ "1,2,3",
+    id == 176 ~ "1",
+    id == 220 ~ "1,2",
+    id == 226 ~ "1,2",
+    id == 264 ~ "1",
+    TRUE ~ as.character(q7)
+  ))%>%
+  mutate(q7_1 = case_when(grepl("1", q7) ~ 1),
+         q7_2 = case_when(grepl("2", q7) ~ 1),
+         q7_3 = case_when(grepl("3", q7) ~ 1),
+         q7_4 = case_when(grepl("4", q7) ~ 1))%>%
+  select(id, q7_1:q7_4) %>%
+  mutate_all(~replace_na(.,0)) %>%
+  pivot_longer(cols = starts_with("q7_"),
+               names_to = "treatment",
+               values_to = "outcome")
+
+```
+

@@ -1,0 +1,202 @@
+---
+title: "Chi-Square Analysis"
+author: "Erin Johnston"
+date: "2024-11-13"
+output: 
+  prettydoc::html_pretty:
+    toc: true
+    toc_depth: 3
+    theme: cayman
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r libraries}
+
+library(tidyverse)
+library(here)
+library(knitr)
+library(plotrix)
+```
+
+```{r guide, echo = F, fig.dim = c(3, 2), fig.align='center'}
+
+
+knitr::include_graphics(here("Images", "perceptions_question.png"))
+
+```
+
+**Research question **: Do anglers on the Central Coast perceive that they catch more fish in MPAs, areas open to fishing, or do they perceive that there is no difference?
+
+
+* Is the predictor variable categorical or quantitative?
+
+* Is the response variable categorical or quantitative?
+
+* What kind of test should we use? 
+
+
+#### Different kinds of chi-square tests
+
+* "Use the chi-square goodness of fit test when you have one categorical variable and you want to test a hypothesis about its distribution."
+
+* "Use the chi-square test of independence when you have two categorical variables and you want to test a hypothesis about their relationship."
+
+
+With a chi-square goodness of fit, we are essentially asking, does the population follow a specific distribution?
+
+
+## Data Trasformation
+
+Transform the data to be more informative to our research question (filter for different parameters; only select columns we are interested in)
+
+
+```{r raw data}
+
+raw_dat <- read_csv(here("Data", "perception_dat.csv"))
+
+## check out the data structure
+str(raw_dat)
+
+raw_dat_str <- raw_dat %>%
+  mutate(region = as.factor(region), ## change data types
+         abundance = as.factor(q16),
+         diversity = as.factor(q17),
+         size = as.factor(q18)) %>%
+  select(region, abundance, diversity, size) %>% ## select columns of interest
+  mutate(abundance = case_when(    ## change number categories into what they represent
+      abundance == 1 ~ "MPA",
+      abundance == 2 ~ "REF",
+      abundance == 4 ~ "No Difference"),
+    diversity = case_when(
+      diversity == 1 ~ "MPA",
+      diversity == 2 ~ "REF",
+      diversity == 4 ~ "No Difference"),
+    size = case_when(
+      size == 1 ~ "MPA",
+      size == 2 ~ "REF",
+      size == 4 ~ "No Difference"))
+
+str(raw_dat_str)
+
+central <- raw_dat_str %>%
+  filter(region == "Central") %>%
+  group_by(abundance) %>%
+  count()
+
+central_wider <- central %>%
+  pivot_wider(names_from = abundance,
+              values_from = n)
+
+```
+
+
+If people did not have an opinion about this, we would expect the answers to fall randomly into any category. Assuming equal probabilities. 
+
+
+## Investigation & Assumption Checking
+
+Let's do a quick investigative visuals and check assumptions before we continue with the stats
+
+```{r investigation and assumptions}
+
+
+barplot(central$n, col = c("red", "green", "blue"), legend.text = c("MPA", "No Difference", "REF"))
+
+
+
+```
+
+
+Assumptions:
+
+* The data are categorical: check
+
+* The data are independent - the value of one does not depend on the value of the other: check
+
+* The data are mutually exclusive - aka we did not allow a participant to choose more than one answer: check
+
+* The expected frequency of each category is at least 5
+
+We have 3 categories, so if we expected equal frequency, that is at least 5, we need to have had at least 15 responses in the central coast, which we did. Check.
+
+
+## Hypothesis testing
+
+**Null hypothesis or H~0~ **: The population follows a specified distribution. Survey participants choose answers in equal proportions.
+
+**Alternative hypothesis or H~a~**: The population does not follow a specified distribution. Survey participants do not choose answers in equal proportions.
+
+
+
+```{r}
+
+## first way
+
+exp <- rep(1/3, 3)
+
+## statewide chi square tests of equal frequency
+cs_test <- chisq.test(central$n, p = exp)
+cs_test
+
+cs_test$observed
+cs_test$expected
+
+
+## alternatively
+
+
+cs_test2 <- chisq.test(central_wider)
+cs_test2
+
+cs_test2$observed
+cs_test2$expected
+
+
+
+
+
+```
+   > Conclusion: We have enough evidence to reject the null hypothesis and conclude that survey participants from the central coast did not choose these answers equally and that the observed are statistically different than the expected proportions/frequencies.
+
+```{r}
+
+## post hoc test??
+chisq.test(central_wider[, c(1, 2)], correct = FALSE) ## MPA vs No Difference
+chisq.test(central_wider[, c(1, 3)], correct = FALSE) ## MPA vs REF
+chisq.test(central_wider[, c(2, 3)], correct = FALSE) ## No Difference vs REF
+
+```
+
+
+
+## Visualization
+
+```{r}
+
+visual_dat <- central %>%
+  rename(observed = n) %>%
+  mutate(expected = 17.33333) %>%
+  pivot_longer(cols = observed:expected,
+               names_to = "type",
+               values_to = "frequency")
+
+ggplot(data = visual_dat, aes(x = abundance, y = frequency, fill = type))+
+  geom_col(position = "dodge")+
+  labs(x = "", y = "Number of Respondents")+
+  theme_classic()
+
+```
+
+
+Not this time: Chi-square test of independence.
+
+
+
+https://www.scribbr.com/statistics/chi-square-goodness-of-fit/#
