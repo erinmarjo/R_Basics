@@ -133,6 +133,8 @@ You can also set your working directory manually by going to the `session` tab a
 
 The most advanced way of setting your working directory is using R Projects. For the beginner R user, this maybe a little difficult to understand. R projects are useful because they are a 'bundle' of all of your data files, code, output, and associated files.
 
+See the start of the [Intermediate R Course](https://erinmarjo.github.io/R_Basics/Intermediate_R) for help with R projects
+
 
 ## 1.6. Reading in your data
 

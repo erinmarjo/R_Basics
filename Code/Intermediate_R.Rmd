@@ -1,15 +1,12 @@
 ---
 title: "Intermediate R"
-author: "Fall 2024"
-date: "9/21/2024"
+author: "Erin Johnston"
+date: "1/6/2026"
 output: 
   prettydoc::html_pretty:
-  #html_document:
     toc: true
-    #number_sections: true
     toc_depth: 4
     theme: cayman
-    #toc_float: true
 ---
 
 ```{r setup, include=FALSE}
