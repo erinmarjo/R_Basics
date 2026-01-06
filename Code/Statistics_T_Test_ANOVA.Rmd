@@ -1,15 +1,12 @@
 ---
 title: "Statistics - T-test and ANOVA"
 author: "Erin Johnston"
-date: "2024-11-12"
+date: "2026"
 output: 
   prettydoc::html_pretty:
-  #html_document:
     toc: true
-    #number_sections: true
     toc_depth: 4
     theme: cayman
-    #toc_float: true
 ---
 
 ```{r setup, include=FALSE}

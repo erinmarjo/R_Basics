@@ -69,24 +69,16 @@ Notice the name here with yyyy-mm-dd_name.
 ### Lesson activity 2 - create subfolders to organize files
 
 
-# Lesson 2 - GitHubs
+# Lesson 2 - GitHub
 
 # Lesson 3 - Basic Statistics with R
 
-Chi-square
+## Chi-square
 
-```{r}
-set.seed(42)
-initial <- factor(sample(c("Yes", "No", "Maybe"), 100, replace = TRUE))
-outcome <- factor(sample(c("Pass", "Fail"), 100, replace = TRUE))
+See this [chi-square example](https://erinmarjo.github.io/R_Basics/Statistics_Chi_Square). Using our CCFRP angler survey data!
 
-summary(table(initial, outcome))
+## T-test and Anova
 
-chisq.test(x = initial, y = outcome)
-
-vec <- runif(1000)
-quantile(vec, c(0.05, 0.95))
-
-```
+See this [T-Test and Anova example](https://erinmarjo.github.io/R_Basics/Statistics_T_Test_ANOVA). Yes! Using our fisheries data again.
 
 

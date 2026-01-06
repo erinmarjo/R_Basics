@@ -156,10 +156,15 @@ an R project</a></li>
 <li><a href="#lesson-activity-2---create-subfolders-to-organize-files" id="toc-lesson-activity-2---create-subfolders-to-organize-files">Lesson
 activity 2 - create subfolders to organize files</a></li>
 </ul></li>
-<li><a href="#lesson-2---githubs" id="toc-lesson-2---githubs">Lesson 2 -
-GitHubs</a></li>
+<li><a href="#lesson-2---github" id="toc-lesson-2---github">Lesson 2 -
+GitHub</a></li>
 <li><a href="#lesson-3---basic-statistics-with-r" id="toc-lesson-3---basic-statistics-with-r">Lesson 3 - Basic Statistics
-with R</a></li>
+with R</a>
+<ul>
+<li><a href="#chi-square" id="toc-chi-square">Chi-square</a></li>
+<li><a href="#t-test-and-anova" id="toc-t-test-and-anova">T-test and
+Anova</a></li>
+</ul></li>
 </ul>
 </div>
 </div>
@@ -229,31 +234,21 @@ US</em>.</p>
 <h3>Lesson activity 2 - create subfolders to organize files</h3>
 </div>
 </div>
-<div id="lesson-2---githubs" class="section level1">
-<h1>Lesson 2 - GitHubs</h1>
+<div id="lesson-2---github" class="section level1">
+<h1>Lesson 2 - GitHub</h1>
 </div>
 <div id="lesson-3---basic-statistics-with-r" class="section level1">
 <h1>Lesson 3 - Basic Statistics with R</h1>
-<p>Chi-square</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a>initial <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">&quot;Yes&quot;</span>, <span class="st">&quot;No&quot;</span>, <span class="st">&quot;Maybe&quot;</span>), <span class="dv">100</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a>outcome <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">&quot;Pass&quot;</span>, <span class="st">&quot;Fail&quot;</span>), <span class="dv">100</span>, <span class="at">replace =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a></span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">summary</span>(<span class="fu">table</span>(initial, outcome))</span></code></pre></div>
-<pre><code>## Number of cases in table: 100 
-## Number of factors: 2 
-## Test for independence of all factors:
-##  Chisq = 0.030029, df = 2, p-value = 0.9851</code></pre>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="fu">chisq.test</span>(<span class="at">x =</span> initial, <span class="at">y =</span> outcome)</span></code></pre></div>
-<pre><code>## 
-##  Pearson&#39;s Chi-squared test
-## 
-## data:  initial and outcome
-## X-squared = 0.030029, df = 2, p-value = 0.9851</code></pre>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a>vec <span class="ot">&lt;-</span> <span class="fu">runif</span>(<span class="dv">1000</span>)</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">quantile</span>(vec, <span class="fu">c</span>(<span class="fl">0.05</span>, <span class="fl">0.95</span>))</span></code></pre></div>
-<pre><code>##         5%        95% 
-## 0.04138986 0.94410831</code></pre>
+<div id="chi-square" class="section level2">
+<h2>Chi-square</h2>
+<p>See this <a href="https://erinmarjo.github.io/R_Basics/Statistics_Chi_Square">chi-square
+example</a>. Using our CCFRP angler survey data!</p>
+</div>
+<div id="t-test-and-anova" class="section level2">
+<h2>T-test and Anova</h2>
+<p>See this <a href="https://erinmarjo.github.io/R_Basics/Statistics_T_Test_ANOVA">T-Test
+and Anova example</a>. Yes! Using our fisheries data again.</p>
+</div>
 </div>
 </section>
 
